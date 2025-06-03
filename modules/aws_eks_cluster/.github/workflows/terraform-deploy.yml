@@ -1,0 +1,42 @@
+name: Terraform Deployment
+
+on:
+  push:
+    paths:
+      - 'terraform.tfvars'  # Trigger the workflow when the terraform.tfvars file is updated
+    branches:
+      - main  # Adjust to the branch where you want to trigger the workflow
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the main repo (this repo where the workflow lives)
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    # Set up Terraform
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v1
+
+    # Get the terraform.tfvars file from another repository
+    - name: Checkout terraform.tfvars from another repo
+      uses: actions/checkout@v2
+      with:
+        repository: '<OWNER>/<REPO_WITH_TFVARS>'  # The repository where terraform.tfvars is located
+        ref: main  # Branch name to pull the terraform.tfvars file from
+        token: ${{ secrets.REPO_ACCESS_TOKEN }}
+        path: terraform-tfvars  # Directory where terraform.tfvars will be placed
+
+    # Initialize Terraform
+    - name: Terraform Init
+      run: terraform init
+
+    # Plan Terraform
+    - name: Terraform Plan
+      run: terraform plan -var-file=terraform-tfvars/terraform.tfvars
+
+    # Apply Terraform (comment this out if you only want to plan)
+    - name: Terraform Apply
+      run: terraform apply -var-file=terraform-tfvars/terraform.tfvars -auto-approve
